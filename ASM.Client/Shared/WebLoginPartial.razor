@@ -1,0 +1,60 @@
+﻿@inject Blazored.SessionStorage.ISyncSessionStorageService sessionStorage
+@inject NavigationManager NavigationManager
+<ul class="navbar-nav">
+    <li class="nav-item">
+        <a class="nav-link text-dark" id="cart" href="/Cart">
+            @if (cart != null && cart != "")
+            {
+                <img id="imgCart" src="images/cartA.png" style="width:30px" />
+            }
+            else
+            {
+                <img id="imgCart" src="images/cart.png" style="width:30px" />
+            }
+        </a>
+    </li>
+    @if (emailAddress != null && emailAddress != "")
+    {
+        <li class="nav-item">
+            <a class="nav-link text-dark" id="information" href="">Hello @emailAddress ! | </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-dark" id="history" href="/History">Đơn hàng | </a>
+        </li>
+        <li class="nav-item">
+            <button id="logout" type="button" @onclick="Logout" class="nav-link btn btn-link text-dark">Logout</button>
+        </li>
+    }
+    else
+    {
+        <li class="nav-item">
+            <a class="nav-link text-dark" id="register" href="/Register">Đăng ký</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-dark" id="login" href="/Login">Đăng nhập</a>
+        </li>
+    }
+</ul>
+
+@code{
+    string emailAddress;
+    string cart;
+    protected override async Task OnInitializedAsync()
+    {
+        emailAddress = sessionStorage.GetItem<string>("Email");
+        cart = sessionStorage.GetItem<string>("cart");
+    }
+
+    protected void o()
+    {
+        emailAddress = sessionStorage.GetItem<string>("Email");
+        cart = sessionStorage.GetItem<string>("cart");
+    }
+
+    protected void Logout()
+    {
+        sessionStorage.RemoveItem("AccessToken");
+        sessionStorage.RemoveItem("Email");
+        NavigationManager.NavigateTo("/",true);
+    }
+}

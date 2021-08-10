@@ -1,0 +1,198 @@
+﻿@page "/"
+@using ASM.Share.Models;
+@inject Blazored.SessionStorage.ISyncSessionStorageService sessionStorage
+@inject Microsoft.Extensions.Configuration.IConfiguration config;
+@*@inject Blazored.SessionStorage.ISyncSessionStorageService sessionStorage*@
+@layout WebLayout;
+
+
+<style>
+    .img-fluid:hover {
+        transform: scale(1.1);
+    }
+    .list-product {
+        margin: auto;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .product {
+        margin-top: 10px;
+        margin-right: 10px;
+        width: 205px;
+    }
+
+    .img {
+        width: 150px;
+        display: block;
+        margin: auto;
+    }
+
+    .title {
+        color: #0e0e0e;
+        display: block;
+        font-size: 15px;
+        font-weight: bold;
+        text-align: center;
+        height: 60px;
+    }
+
+    .field-price {
+        font-size: 24px;
+        color: #d50000;
+        margin-bottom: 15px;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .viewProduct, .addProduct {
+        border: 0;
+        font-weight: 700;
+        padding: 9px 5px;
+        background: #ffd800;
+        -webkit-border-radius: 5px;
+        -moz-border-radius: 5px;
+        border-radius: 5px;
+        display: block;
+        width: 186px;
+        margin: 0 auto;
+        color: #0e0e0e;
+    }
+
+    .addProduct {
+        margin-left: 2px;
+    }
+</style>
+<div class="row">
+    @foreach (var item in monAns)
+    {
+        <div class="col-sm-6 pb-2">
+            @{
+                temp = imgUrl + item.Hinh;
+            }
+            <div class="card">
+                <div class="card-body row pb-1">
+                    <div class="col-md-8 col-sm-8 text-center">
+                        <img src="@temp" class="img-fluid " />
+                        <button type="button" class="addProduct text-center" style="margin-left:68px" onmouseup="addCart(@item.MonAnID);" @onclick="() => AddCart(item.MonAnID)">
+                        Add order <img id="imgBusy_@item.MonAnID" src="images/busy.gif" style="display:none" /></button>
+                    </div>
+                    <div class="col-md-4 col-sm-4">
+                        <div class="pt-5">
+                            <h4>
+                                <span class="title text-danger"> @item.Name</span>
+                            </h4>
+                            <div class="field-price">@item.Gia VNĐ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+@*<button type="button" class="btn" @onclick="Test">Test</button>*@
+
+@code {
+    private string name;
+    public List<MonAn> monAns;
+    protected string imgUrl = "";
+    protected string temp = "";
+    //protected void OnInitialized()
+    protected override async Task OnInitializedAsync()
+    {
+        //sessionStorage.SetItem("name", "John Smith");
+        //var name = sessionStorage.GetItem<string>("name");
+
+        //monAns = _monAnService.GetMonAnAll();
+
+        var apiUrl = config.GetSection("API")["APIUrl"].ToString();
+        imgUrl = config.GetSection("API")["ImgUrl"].ToString();
+
+        monAns = new List<MonAn>();
+        using (var client = new HttpClient())
+        {
+            //client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            client.DefaultRequestHeaders.Add("Access-Control-Allow-Origin", "*");
+            client.BaseAddress = new Uri(apiUrl);
+            using (var response = await client.GetAsync("MonAn"))
+            {
+                string apiResponse = await response.Content.ReadAsStringAsync();
+                monAns = Newtonsoft.Json.JsonConvert.DeserializeObject<List<MonAn>>(apiResponse);
+            }
+        }
+    }
+
+    private void AddCart(int id)
+    {
+        //var cart = HttpContext.Session.GetString("cart");//get key cart
+        var cart = sessionStorage.GetItem<string>("cart");//get key cart
+        if (cart == null)
+        {
+
+            var monAn = monAns.Where(u => u.MonAnID == id).FirstOrDefault();
+            List<CartItem> listCart = new List<CartItem>()
+            {
+                    new CartItem
+                    {
+                        MonAn = monAn,
+                        Quantity = 1,
+                        Sotien= monAn.Gia
+                    }
+            };
+
+            ASM.Share.Models.Cart giohang = new ASM.Share.Models.Cart()
+            {
+                ListViewCart = listCart,
+                Tongtien = Tinhtien(listCart)
+            };
+
+            sessionStorage.SetItem("cart", JsonConvert.SerializeObject(giohang));
+            //HttpContext.Session.SetString("cart", JsonConvert.SerializeObject(listCart));
+        }
+        else
+        {
+            var monAn = monAns.Where(u => u.MonAnID == id).FirstOrDefault();
+
+            ASM.Share.Models.Cart giohang = JsonConvert.DeserializeObject<ASM.Share.Models.Cart>(cart);
+            //List <ViewCart> dataCart = JsonConvert.DeserializeObject<List<ViewCart>>(cart);
+            bool check = true;
+            for (int i = 0; i < giohang.ListViewCart.Count; i++)
+            {
+                if (giohang.ListViewCart[i].MonAn.MonAnID == id)
+                {
+                    giohang.ListViewCart[i].Quantity++;
+                    giohang.ListViewCart[i].Sotien = monAn.Gia * giohang.ListViewCart[i].Quantity;
+                    check = false;
+                }
+            }
+
+            if (check)
+            {
+                //var monAn = monAns.Where(u => u.MonAnID == id).FirstOrDefault();
+                giohang.ListViewCart.Add(new CartItem
+                {
+                    MonAn = monAn,
+                    Quantity = 1,
+                    Sotien = monAn.Gia * 1
+                });
+            }
+            giohang.Tongtien = Tinhtien(giohang.ListViewCart);
+            sessionStorage.SetItem("cart", JsonConvert.SerializeObject(giohang));
+
+            //HttpContext.Session.SetString("cart", JsonConvert.SerializeObject(dataCart));
+        }
+    }
+
+    private double Tinhtien(List<CartItem> listCart)
+    {
+        double tongtien = 0;
+        if (listCart != null)
+        {
+            for (int i = 0; i < listCart.Count; i++)
+            {
+                tongtien += listCart[i].Sotien;
+            }
+        }
+        return tongtien;
+    }
+}

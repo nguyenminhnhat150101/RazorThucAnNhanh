@@ -1,0 +1,130 @@
+﻿@page "/MonAndialog/{id}"
+@using ASM.Share.Models
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@inject ASM.Share.Models.IMonAnSvc _monAnService
+@inject NavigationManager navigation
+@inject IWebHostEnvironment env
+
+<h3>@Tieude</h3>
+<div class="row">
+    <div class="col-md-4">
+        <EditForm Model="@monAn" OnValidSubmit="@SubmitForm">
+            <DataAnnotationsValidator />
+            <input type="hidden" @bind="monAn.MonAnID" />
+            <div class="form-group">
+                <label class="control-label">Tên món ăn</label>
+                <input @bind="monAn.Name" class="form-control" />
+                <ValidationMessage For="@(() => monAn.Name)" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Giá</label>
+                <input @bind="monAn.Gia" class="form-control" />
+                <ValidationMessage For="@(() => monAn.Gia)" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Phân loại</label>
+                <InputSelect @bind-Value="monAn.Phanloai" class="form-control">
+                    @foreach (var phanloai in Enum.GetValues(typeof(Phanloai)))
+                    {
+                        <option value="@phanloai">@phanloai</option>
+                    }
+                </InputSelect>
+            </div>
+            @if (monAn.Hinh != null)
+            {
+                <div class="form-group">
+                    <img src="images/Monan/@monAn.Hinh" style="height:100px" />
+                </div>
+            }          
+            <div class="form-group">
+                <label class="control-label">Chọn hình</label>
+                <InputFile class="form-control" OnChange="OnInputFileChange" />
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input type="checkbox" class="form-check-input" @bind="monAn.Trangthai" /> Trạng thái
+                </label>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-info">Lưu</button>
+                <input type="button" class="btn btn-primary" @onclick="@Cancel" value="Thoát" />
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code{
+    [Parameter]
+    public string id { get; set; }
+
+    //public string id { get; set; }
+    private ASM.Share.Models.MonAn monAn { get; set; }
+    private string Tieude = "";
+    IReadOnlyList<IBrowserFile> selectedFiles;
+    protected override void OnInitialized()
+    {
+        if (string.IsNullOrWhiteSpace(id) || id == "0")
+        {
+            Tieude = "Thêm món ăn";
+            monAn = new ASM.Share.Models.MonAn();
+        }
+        else
+        {
+            Tieude = "Sửa món ăn";
+            monAn = _monAnService.GetMonAn(int.Parse(id));
+        }
+    }
+
+    private async void SubmitForm()
+    {
+        if (selectedFiles != null && selectedFiles.Count > 0)
+        {
+            var rootPath = $"{env.WebRootPath}\\images";
+            if (!Directory.Exists(rootPath))
+            {
+                Directory.CreateDirectory(rootPath);
+            }
+
+            string dirPath = rootPath + @"\" + "MonAn";
+            if (!Directory.Exists(dirPath))
+            {
+                Directory.CreateDirectory(dirPath);
+            }
+
+            var file = selectedFiles[0];
+            string filePath = dirPath + @"\" + file.Name;
+            //var path = $"{env.WebRootPath}\\images\\Monan\\{file.Name}";
+            //foreach (var file in selectedFiles)
+            {
+                Stream stream = file.OpenReadStream();
+                var path = $"{env.WebRootPath}\\images\\Monan\\{file.Name}";
+                FileStream fs = File.Create(path);
+                await stream.CopyToAsync(fs);
+                stream.Close();
+                fs.Close();
+            }
+            monAn.Hinh = file.Name;
+        }
+        if (monAn.MonAnID == 0)
+        {
+            _monAnService.AddMonAn(monAn);
+        }
+        else
+        {
+            _monAnService.EditMonAn(monAn.MonAnID, monAn);
+        }
+        navigation.NavigateTo("MonanList");
+    }
+    private void Cancel()
+    {
+        navigation.NavigateTo("MonanList", true);
+    }
+
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        selectedFiles = e.GetMultipleFiles();
+        //Message = $"{selectedFiles.Count} file(s) selected";
+        this.StateHasChanged();
+    }
+}

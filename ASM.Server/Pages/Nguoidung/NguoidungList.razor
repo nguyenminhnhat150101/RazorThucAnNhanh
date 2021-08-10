@@ -1,0 +1,65 @@
+﻿@page "/nguoidunglist"
+@using ASM.Share.Models
+@using ASM.Server.Data
+@inject ASM.Share.Models.INguoidungSvc _nguoidungService
+
+<h1>Danh sách người dùng</h1>
+@if (nguoidungs == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <a class="btn btn-success p-10" href="/NguoidungDialog/0">Thêm</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Tên đăng nhập</th>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>Chức danh</th>
+                @*<th>Ngày sinh</th>*@
+                <th>Vai trò</th>
+                @*<th>Trạng thái</th>*@
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in nguoidungs)
+            {
+                <tr>
+                    <td>@item.UserName</td>
+                    <td>@item.FullName</td>
+                    <td>@item.Email</td>
+                    <td>@item.Title</td>
+                    <td>@item.Role</td>
+                    @*<td>
+                        @if (item.Locked)
+                        {
+                            <span>Khóa</span>
+                        }
+                    </td>*@
+                    <td>
+                        <a class="btn btn-info" href="/NguoidungDialog/@item.NguoidungID">Sửa</a> |
+                        <a class="btn btn-warning" @onclick="@(()=>Delete(item.NguoidungID))">Xóa</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Nguoidung> nguoidungs;
+
+    protected override void OnInitialized()
+    {
+        nguoidungs = _nguoidungService.GetNguoidungAll();
+    }
+
+    private void Delete(int id)
+    {
+        //_nguoidungService.AddNguoidungDelete(id);
+        //employees = _nguoidungService.GetEmployees();
+    }
+}

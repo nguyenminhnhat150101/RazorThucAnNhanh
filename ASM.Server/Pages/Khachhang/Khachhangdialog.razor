@@ -1,0 +1,94 @@
+﻿@page "/khachhangdialog/{id}"
+@using ASM.Share.Models
+
+@inject ASM.Share.Models.IKhachhangSvc _khachhangService
+@inject NavigationManager Navigation
+
+<h3>@Tieude</h3>
+<div class="row">
+    <div class="col-md-4">
+        <EditForm Model="@khachhang" OnValidSubmit="@SubmitForm">
+            <DataAnnotationsValidator />
+            <input type="hidden" @bind="khachhang.KhachhangID" />
+            <div class="form-group">
+                <label class="control-label">Họ tên</label>
+                <input @bind="khachhang.FullName" class="form-control" />
+                <ValidationMessage For="@(()  => khachhang.FullName)" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Địa chỉ email</label>
+                <input type="email" @bind="khachhang.EmailAddress" class="form-control" />
+                <ValidationMessage For="@(()  => khachhang.EmailAddress)" />
+            </div>
+            <div class="form-group">
+                <label for="nguoidung.Password" class="control-label">Mật khẩu</label>
+                <input type="password" @bind="khachhang.Password" class="form-control" />
+                <ValidationMessage For="@(()  => khachhang.Password)" />
+            </div>
+            <div class="form-group">
+                <label for="nguoidung.ConfirmPassword" class="control-label">Mật khẩu 2</label>
+                <input type="password" @bind="khachhang.ConfirmPassword" class="form-control" />
+                <ValidationMessage For="@(()  => khachhang.ConfirmPassword)" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Ngày sinh</label>
+                <input type="date" @bind="khachhang.Ngaysinh" class="form-control" />
+                <ValidationMessage For="@(()  => khachhang.Ngaysinh)" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Số điện thoại</label>
+                <input type="tel" @bind="khachhang.PhoneNumber" class="form-control" />
+                <ValidationMessage For="@(()  => khachhang.PhoneNumber)" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Mô tả</label>
+                <input @bind="khachhang.Mota" class="form-control" />
+                <ValidationMessage For="@(()  => khachhang.Mota)" />
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-info">Lưu</button>
+                <input type="button" class="btn btn-primary" @onclick="@Cancel" value="Thoát" />
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code
+{
+    [Parameter]
+    public string id { get; set; }
+
+    private ASM.Share.Models.Khachhang khachhang { get; set; }
+    private string Tieude = "";
+
+    protected override void OnInitialized()
+    {
+        if (string.IsNullOrWhiteSpace(id) || id == "0")
+        {
+            Tieude = "Thêm khách hàng";
+            khachhang = new ASM.Share.Models.Khachhang();
+        }
+        else
+        {
+            Tieude = "Sửa khách hàng";
+            khachhang = _khachhangService.GetKhachhang(int.Parse(id));
+        }
+    }
+
+    private void SubmitForm()
+    {
+        if (khachhang.KhachhangID == 0)
+        {
+            _khachhangService.AddKhachhang(khachhang);
+        }
+        else
+        {
+            _khachhangService.EditKhachhang(khachhang.KhachhangID, khachhang);
+        }
+        Navigation.NavigateTo("KhachhangList");
+    }
+    private void Cancel()
+    {
+        Navigation.NavigateTo("KhachhangList", true);
+    }
+}

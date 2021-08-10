@@ -1,0 +1,107 @@
+﻿@page "/login"
+@using System.Web;
+@using System.Net;
+@using System.ComponentModel.DataAnnotations;
+@layout WebLayout;
+@inject NavigationManager NavigationManager
+@inject Blazored.SessionStorage.ISyncSessionStorageService sessionStorage
+@inject Microsoft.Extensions.Configuration.IConfiguration config;
+@inject IJSRuntime JSRuntime
+
+<div class="col-md-4 offset-md-3 mt-5">
+    <div class="card">
+        <h4 class="card-body">Đăng nhập</h4>
+        <div class="card-body">
+            <div class="form-group">
+                <input type="text" id="username" placeholder="Email" @bind="@email" class="form-control"/>
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" placeholder="Password" @bind="@password" @onkeypress="Enter" class="form-control" />
+            </div>
+            <button class="ml-md-auto btn btn-primary" @onclick="CheckLogin">
+                Login
+            </button>
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="alert alert-danger mt-3 mb-0">@((MarkupString)error)</div>
+            }
+        </div>
+    </div>
+</div>
+
+@code{
+    private bool loading;
+    private string error;
+
+    string email = "";
+    string password = "";
+
+    private string name;
+
+    protected override void OnInitialized()
+    {
+    }
+    private string Encode(string param)
+    {
+        return HttpUtility.UrlEncode(param);
+    }
+
+    public void Enter(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            if (password != "")
+            {
+                CheckLogin();
+            }
+        }
+    }
+
+    private async Task CheckLogin()
+    {
+        error = "";
+        if (email == "")
+        {
+            error = " - Bạn cần nhập email.";
+        }
+        if (password == "")
+        {
+            error += (error == "" ? "" : "<br/>" + " - Bạn cần nhập password");
+        }
+        if (error == "")
+        {
+            var apiUrl = config.GetSection("API")["APIUrl"].ToString();
+            using (var client = new HttpClient())
+            {
+                ViewWebLogin viewWebLogin = new ViewWebLogin() { Email = email, Password = password };
+                client.DefaultRequestHeaders.Add("Access-Control-Allow-Origin", "*");
+                //client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "");
+                StringContent content = new StringContent(JsonConvert.SerializeObject(viewWebLogin), System.Text.Encoding.UTF8, "application/json");
+                HttpResponseMessage response = await client.PostAsync(apiUrl + "Token", content);
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    error += (error == "" ? "" : "<br/>") + " - Lỗi khi gọi API.";
+                    //xu li loi
+                    //return Content(response.ToString());
+                }
+                else
+                {
+                    string apiResponse = await response.Content.ReadAsStringAsync();
+                    var viewToken = Newtonsoft.Json.JsonConvert.DeserializeObject<ViewToken>(apiResponse);
+
+                        var accessToken = viewToken.Token;
+                        sessionStorage.SetItem("KhachhangId", viewToken.KhachhangId);
+                        sessionStorage.SetItem("Email", email);
+                        sessionStorage.SetItem("AccessToken", accessToken);
+
+                        await JSRuntime.InvokeAsync<object>("refreshMenu", new { email = email });
+                        //await JSRuntime.InvokeAsync<object>("CalledJSFunctionWithParameter", "Jignesh Trivedi");
+
+                        NavigationManager.NavigateTo("/",true);
+                }
+            }
+        }
+
+    }
+
+}

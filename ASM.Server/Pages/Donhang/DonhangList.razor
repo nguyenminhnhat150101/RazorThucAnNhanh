@@ -1,0 +1,49 @@
+﻿@page "/donhanglist"
+@using ASM.Share.Models
+@using ASM.Server.Data
+@inject ASM.Share.Models.IDonhangSvc _donhangService
+
+<h1>Danh sách đơn hàng</h1>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Khách hàng</th>
+            <th>Ngày đặt</th>
+            <th>Tổng tiền</th>
+            <th>Trạng thái</th>
+            <th>Ghí chú</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in donhangs)
+        {
+            <tr>
+                <td>@item.Khachhang.EmailAddress</td>
+                <td>@item.Ngaydat</td>
+                <td>@item.Tongtien</td>
+                <td>@item.TrangthaiDonhang</td>
+                <td>@item.Ghichu</td>
+                <td>
+                    <a class="btn btn-info" href="/NguoidungDialog/@item.DonhangID">Sửa</a> |
+                    <a class="btn" href="/DonhangDetail/@item.DonhangID">Chi tiết</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Donhang> donhangs;
+
+    protected override void OnInitialized()
+    {
+        donhangs = _donhangService.GetDonhangAll();
+    }
+
+    private void Delete(int id)
+    {
+        //_nguoidungService.AddNguoidungDelete(id);
+        //employees = _nguoidungService.GetEmployees();
+    }
+}

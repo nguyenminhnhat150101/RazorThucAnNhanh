@@ -1,0 +1,70 @@
+﻿@page "/MonanList"
+@using ASM.Share.Models
+@using ASM.Server.Data
+@inject ASM.Share.Models.IMonAnSvc _monAnService
+
+<h1>Danh sách món ăn</h1>
+@if (monAns == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <a class="btn btn-success p-10" href="/MonAnDialog/0">Thêm</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Tên</th>
+                <th>Giá</th>
+                <th>Email</th>
+                <th>Phân loại</th>
+                <th>Hình</th>
+                <th>Trạng thái</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in monAns)
+            {
+                <tr>
+                    <td>@item.Name</td>
+                    <td>@item.Gia</td>
+                    <td>
+                        @if (item.Phanloai == Phanloai.Monan)
+                        {
+                            <span>Món ăn</span>
+                        }
+                        @if (item.Phanloai == Phanloai.Nuoc)
+                        {
+                            <span>Nước</span>
+                        }
+                        @if (item.Phanloai == Phanloai.Combo)
+                        {
+                            <span>Combo</span>
+                        }
+                    </td>
+                    <td><img src="images/monan/@item.Hinh" style="width:150px"/></td>
+                    <td>@item.Trangthai</td>
+                    <td>
+                        <a class="btn btn-info" href="/MonanDialog/@item.MonAnID">Sửa</a> |
+                        <a class="btn btn-warning" @onclick="@(()=>Delete(item.MonAnID))">Xóa</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    public List<MonAn> monAns;
+    protected override void OnInitialized()
+    {
+        monAns = _monAnService.GetMonAnAll();
+    }
+
+    private void Delete(int id)
+    {
+        //_nguoidungService.AddNguoidungDelete(id);
+        //employees = _nguoidungService.GetEmployees();
+    }
+}

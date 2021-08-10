@@ -1,0 +1,98 @@
+﻿@page "/register"
+@using System.Net;
+@using ASM.Share.Models;
+@inject IJSRuntime IJSRuntime
+@inject Blazored.SessionStorage.ISyncSessionStorageService sessionStorage
+@inject Microsoft.Extensions.Configuration.IConfiguration config;
+@inject NavigationManager NavigationManager
+@layout WebLayout;
+<h1>Đăng ký</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm Model="@khachhang" OnValidSubmit="@SubmitForm">
+            <DataAnnotationsValidator />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label class="control-label">Khách hàng</label>
+                <input @bind="khachhang.FullName" class="form-control" />
+                <ValidationMessage For="@(() => khachhang.FullName)" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Ngày sinh</label>
+                <input @bind="khachhang.Ngaysinh" class="form-control" type="date" />
+                <ValidationMessage For="@(() => khachhang.Ngaysinh)" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Phone</label>
+                <input @bind="khachhang.PhoneNumber" class="form-control" type="tel" />
+                <ValidationMessage For="@(() => khachhang.PhoneNumber)" />
+            </div>
+            <div class="form-group">
+                <label asp-for="EmailAddress" class="control-label">Email</label>
+                <input @bind="khachhang.EmailAddress" class="form-control" type="email" />
+                <ValidationMessage For="@(() => khachhang.EmailAddress)" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Mật khẩu</label>
+                <input type="password" @bind="khachhang.Password" class="form-control" />
+                <ValidationMessage For="@(() => khachhang.Password)" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Mật khẩu (lần 2)</label>
+                <input type="password" @bind="khachhang.ConfirmPassword" class="form-control" />
+                <ValidationMessage For="@(() => khachhang.ConfirmPassword)" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Mota" class="control-label">Mô tả</label>
+                <input @bind="khachhang.Mota" class="form-control" />
+                <ValidationMessage For="@(() => khachhang.Mota)" />
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </EditForm>
+    </div>
+</div>
+<div>
+    <a href="/">Trang Chủ</a>
+</div>
+@code {
+    ASM.Share.Models.Khachhang khachhang = new ASM.Share.Models.Khachhang();
+    private string Tieude = "Đăng ký";
+    protected override void OnInitialized()
+    {
+
+    }
+    private async void SubmitForm()
+    {
+        var apiUrl = config.GetSection("API")["APIUrl"].ToString();
+        var accessToken = sessionStorage.GetItem<string>("AccessToken");
+
+        using (var client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            StringContent content = new StringContent(JsonConvert.SerializeObject(khachhang),
+            System.Text.Encoding.UTF8, "application/json");
+            client.DefaultRequestHeaders.Add("Access-Control-Allow-Origin", "*");
+            HttpResponseMessage response = await client.PostAsync(apiUrl + "Khachhang", content);
+
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+
+            }
+            else
+            {
+                string apiResponse = await response.Content.ReadAsStringAsync();
+                if (apiResponse == "-1")
+                {
+
+                }
+                else
+                {
+                    NavigationManager.NavigateTo("/");
+                }
+            }
+        }
+    }
+}
